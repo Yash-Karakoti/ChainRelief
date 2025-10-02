@@ -20,7 +20,7 @@ const testSideShiftAPI = async () => {
 
   // Test API endpoints
   const endpoints = [
-    { name: 'Get Supported Assets', endpoint: '/pairs?pairs=btc-mainnet,usdc-bsc,bch,eth'', method: 'GET' },
+    { name: 'Get Supported Assets', endpoint: '/pairs?pairs=btc-mainnet,usdc-bsc,bch,eth', method: 'GET' },
     { name: 'Test Quote Generation', endpoint: '/quote', method: 'POST', data: {
       depositMethodId: 'ETH',
       settleMethodId: 'USDC',
