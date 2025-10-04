@@ -1,11 +1,13 @@
 // Test SideShift V2 API with your real credentials
+import { config } from './src/config.js';
+
 const testSideShiftAPI = async () => {
   console.log('🚨 ChainRelief - SideShift V2 API Test');
   console.log('=====================================\n');
   
-  const apiKey = '58efadb407867cef740246ddc1d9a882';
-  const affiliateId = '7FD5vfMtV';
-  const baseURL = 'https://sideshift.ai/api/v2';
+  const apiKey = config.sideshift.apiKey;
+  const affiliateId = config.sideshift.affiliateId;
+  const baseURL = config.sideshift.baseURL;
   
   console.log('🔑 Your Credentials:');
   console.log(`API Key: ${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`);

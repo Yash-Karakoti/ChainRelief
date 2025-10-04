@@ -1,5 +1,5 @@
 import { WalletManager } from './wallet-manager.js';
-import { SideShiftAPI } from './sideshift-api.js';
+import { sideShiftClient } from './sideshift-client.js';
 import { DonationManager } from './donation-manager.js';
 import { DashboardManager } from './dashboard-manager.js';
 import { testSideShiftInBrowser, testQuoteGeneration } from './test-sideshift-browser.js';
@@ -7,7 +7,7 @@ import { testSideShiftInBrowser, testQuoteGeneration } from './test-sideshift-br
 export class ChainReliefApp {
   constructor() {
     this.walletManager = new WalletManager();
-    this.sideShiftAPI = new SideShiftAPI();
+    this.sideShiftClient = sideShiftClient;
     this.donationManager = new DonationManager();
     this.dashboardManager = new DashboardManager();
     
@@ -29,7 +29,7 @@ export class ChainReliefApp {
         <header class="app-header">
           <div class="header-content">
             <div class="logo-section">
-              <h1 class="app-title">🚨 ChainRelief</h1>
+              <h1 class="app-title">ChainRelief</h1>
               <p class="app-subtitle">Cross-Chain Disaster Funding Platform</p>
             </div>
             <div class="wallet-section">
@@ -141,6 +141,17 @@ export class ChainReliefApp {
               </div>
             </div>
           </section>
+
+          <!-- Real-time Donation Feed -->
+          <section class="donation-feed-section">
+            <h3>Live Donation Feed</h3>
+            <div id="donation-feed" class="donation-feed">
+              <div class="feed-placeholder">
+                <p>Donations will appear here in real-time</p>
+                <small>Connect your wallet and make a donation to see the feed in action!</small>
+              </div>
+            </div>
+          </section>
         </main>
 
         <!-- Footer -->
@@ -153,10 +164,7 @@ export class ChainReliefApp {
 
   async initializeServices() {
     try {
-      // Initialize SideShift API
-      await this.sideShiftAPI.init();
-      
-      // Load supported assets
+      // Load supported assets from SideShift
       await this.loadSupportedAssets();
       
       // Show API status
@@ -170,14 +178,13 @@ export class ChainReliefApp {
   }
 
   showAPISstatus() {
-    const isRealAPI = this.sideShiftAPI.enableRealAPI;
-    const affiliateId = this.sideShiftAPI.affiliateId;
+    const affiliateId = this.sideShiftClient.affiliateId;
     
-    if (isRealAPI) {
-      this.showSuccess(`🚀 Real SideShift API Connected! Affiliate ID: ${affiliateId}`);
-      console.log(`💰 You'll earn 0.5% commission on all donations!`);
+    if (this.sideShiftClient.apiKey) {
+      this.showSuccess(`SideShift API Connected! Affiliate ID: ${affiliateId}`);
+      console.log(`You'll earn 0.5% commission on all donations!`);
     } else {
-      this.showError('⚠️ Using demo mode - add your SideShift credentials for real API');
+      this.showError('SideShift API key not configured - add your credentials');
     }
   }
 
@@ -185,27 +192,27 @@ export class ChainReliefApp {
     this.showLoading('Testing SideShift API connection...');
     
     try {
-      console.log('🧪 Testing SideShift API...');
+      console.log('Testing SideShift API...');
       
       // Test API connection
       const test1 = await testSideShiftInBrowser();
       
       if (test1.success) {
-        this.showSuccess(`✅ SideShift API Connected! ${test1.data.depositMethods?.length || 0} assets available`);
+        this.showSuccess(`SideShift API Connected! ${test1.data.depositMethods?.length || 0} assets available`);
         
         // Test quote generation
         this.showLoading('Testing quote generation...');
         const test2 = await testQuoteGeneration();
         
         if (test2.success) {
-          this.showSuccess(`✅ Quote generation working! Rate: 1 ETH = ${test2.data.rate} USDC`);
-          console.log('🎉 All SideShift API tests passed!');
+          this.showSuccess(`Quote generation working! Rate: 1 ETH = ${test2.data.rate} USDC`);
+          console.log('All SideShift API tests passed!');
         } else {
           this.showError(`Quote test failed: ${test2.error}`);
         }
       } else {
         this.showError(`API connection failed: ${test1.error}`);
-        console.log('💡 App will use mock data for demo purposes');
+        console.log('App will use mock data for demo purposes');
       }
     } catch (error) {
       this.showError(`API test failed: ${error.message}`);
@@ -240,11 +247,26 @@ export class ChainReliefApp {
     document.getElementById('asset-select').addEventListener('change', (e) => {
       this.updateAssetBalance(e.target.value);
       this.updateAssetSearchDisplay(e.target.value);
+      this.updateQuotePreview();
     });
 
     // Campaign selection
     document.getElementById('campaign-select').addEventListener('change', (e) => {
       this.selectCampaign(e.target.value);
+    });
+
+    // Amount input for real-time quote updates
+    document.getElementById('donation-amount').addEventListener('input', (e) => {
+      // Debounce quote updates
+      clearTimeout(this.quoteUpdateTimeout);
+      this.quoteUpdateTimeout = setTimeout(() => {
+        this.updateQuotePreview();
+      }, 500);
+    });
+
+    // Listen for quote preview updates from dashboard manager
+    window.addEventListener('updateQuotePreview', () => {
+      this.updateQuotePreview();
     });
   }
 
@@ -287,7 +309,34 @@ export class ChainReliefApp {
 
   async loadSupportedAssets() {
     try {
-      const assets = await this.sideShiftAPI.getSupportedAssets();
+      console.log('Loading supported assets from SideShift...');
+      const coins = await this.sideShiftClient.getCoins();
+      console.log('Coins received from SideShift:', coins.length);
+      if (!coins || coins.length === 0) {
+        throw new Error('No coins received from SideShift API');
+      }
+      
+      const assets = [];
+      
+      coins.forEach(coin => {
+        
+        // Each coin can have multiple networks
+        coin.networks.forEach(network => {
+          assets.push({
+            id: `${coin.coin}-${network}`,
+            name: coin.name || coin.coin,
+            network: network,
+            symbol: coin.coin,
+            decimals: 18, // Default decimals
+            type: 'token',
+            contractAddress: coin.tokenDetails?.[network]?.contractAddress || null,
+            coin: coin
+          });
+        });
+      });
+      
+      console.log(`Mapped ${assets.length} assets from SideShift`);
+      
       const assetSelect = document.getElementById('asset-select');
       
       // Clear existing options
@@ -324,10 +373,39 @@ export class ChainReliefApp {
         assetSelect.appendChild(groupOption);
       });
 
-      console.log(`✅ Loaded ${assets.length} assets into dropdown`);
+      console.log(`Loaded ${assets.length} assets into dropdown`);
     } catch (error) {
       console.error('Failed to load supported assets:', error);
+      this.showError(`Failed to load supported assets: ${error.message}`);
+      
+      // Add fallback assets if SideShift fails
+      this.loadFallbackAssets();
     }
+  }
+
+  loadFallbackAssets() {
+    console.log('Loading fallback assets...');
+    const fallbackAssets = [
+      { id: 'eth-ethereum', name: 'Ethereum', network: 'ethereum', symbol: 'ETH' },
+      { id: 'btc-bitcoin', name: 'Bitcoin', network: 'bitcoin', symbol: 'BTC' },
+      { id: 'usdc-ethereum', name: 'USDC', network: 'ethereum', symbol: 'USDC' },
+      { id: 'usdt-ethereum', name: 'USDT', network: 'ethereum', symbol: 'USDT' }
+    ];
+
+    const assetSelect = document.getElementById('asset-select');
+    assetSelect.innerHTML = '<option value="">Select asset...</option>';
+
+    fallbackAssets.forEach(asset => {
+      const option = document.createElement('option');
+      option.value = asset.id;
+      option.textContent = `${asset.name} (${asset.symbol})`;
+      option.dataset.network = asset.network;
+      option.dataset.symbol = asset.symbol;
+      option.dataset.name = asset.name;
+      assetSelect.appendChild(option);
+    });
+
+    console.log(`Loaded ${fallbackAssets.length} fallback assets`);
   }
 
   loadActiveCampaigns() {
@@ -494,6 +572,37 @@ export class ChainReliefApp {
     }
 
     try {
+      this.showLoading('Getting quote...');
+      
+      console.log('Creating quote for donation:', {
+        assetId,
+        coinSymbol: this.getCoinSymbol(assetId),
+        networkName: this.getNetworkName(assetId),
+        amount: parseFloat(amount)
+      });
+      
+      // Get quote first
+      const quote = await this.sideShiftClient.createQuote(
+        this.getCoinSymbol(assetId), 
+        this.getNetworkName(assetId), 
+        'USDC', 
+        'ethereum', 
+        parseFloat(amount)
+      );
+      
+      console.log('Donation quote received:', quote);
+      
+      if (!quote) {
+        throw new Error('Failed to get quote');
+      }
+
+      // Show quote to user for confirmation
+      const confirmed = await this.showQuoteConfirmation(quote);
+      if (!confirmed) {
+        this.hideLoading();
+        return;
+      }
+
       this.showLoading('Processing donation...');
       
       // Create donation through SideShift API
@@ -501,7 +610,8 @@ export class ChainReliefApp {
         campaignId: this.currentCampaign,
         assetId: assetId,
         amount: amount,
-        recipientAddress: this.walletManager.getAddress()
+        recipientAddress: this.walletManager.getAddress(),
+        quote: quote
       });
 
       // Execute swap via SideShift
@@ -510,10 +620,25 @@ export class ChainReliefApp {
       // Update tracking
       this.updateTrackingMetrics(swapResult);
       
+      // Track donation progress
+      this.dashboardManager.trackDonationProgress(donation.id, 'swap_completed', {
+        usdValue: swapResult.usdValue,
+        asset: swapResult.settleAsset,
+        impact: donation.impact
+      });
+      
+      // Add to donation feed
+      this.dashboardManager.addToDonationFeed({
+        usdValue: swapResult.usdValue,
+        asset: swapResult.settleAsset,
+        impact: donation.impact
+      });
+      
       this.showSuccess(`Donation successful! Transaction: ${swapResult.transactionId}`);
       
       // Reset form
       document.getElementById('donation-amount').value = '';
+      this.hideQuotePreview();
       
     } catch (error) {
       console.error('Donation failed:', error);
@@ -589,10 +714,219 @@ export class ChainReliefApp {
 
   getNotificationIcon(type) {
     const icons = {
-      success: '✅',
-      error: '❌',
-      loading: '⏳'
+      success: 'SUCCESS',
+      error: 'ERROR',
+      loading: 'LOADING'
     };
-    return icons[type] || 'ℹ️';
+    return icons[type] || 'INFO';
+  }
+
+  async showQuoteConfirmation(quote) {
+    return new Promise((resolve) => {
+      // Create quote confirmation modal
+      const modal = document.createElement('div');
+      modal.className = 'quote-modal';
+      modal.innerHTML = `
+        <div class="quote-modal-content">
+          <div class="quote-header">
+            <h3>Quote Confirmation</h3>
+            <button class="close-quote-modal">&times;</button>
+          </div>
+          <div class="quote-details">
+            <div class="quote-row">
+              <span class="quote-label">You're donating:</span>
+              <span class="quote-value">${quote.depositAmount} ${quote.depositCoin}</span>
+            </div>
+            <div class="quote-row">
+              <span class="quote-label">You'll receive:</span>
+              <span class="quote-value">${quote.settleAmount} ${quote.settleCoin}</span>
+            </div>
+            <div class="quote-row">
+              <span class="quote-label">Exchange rate:</span>
+              <span class="quote-value">1 ${quote.depositCoin} = ${quote.rate} ${quote.settleCoin}</span>
+            </div>
+            <div class="quote-row">
+              <span class="quote-label">Platform fee:</span>
+              <span class="quote-value">Included in rate</span>
+            </div>
+            <div class="quote-row">
+              <span class="quote-label">Network:</span>
+              <span class="quote-value">${quote.depositNetwork} → ${quote.settleNetwork}</span>
+            </div>
+            <div class="quote-row total">
+              <span class="quote-label">Total cost:</span>
+              <span class="quote-value">${quote.depositAmount} ${quote.depositCoin}</span>
+            </div>
+            <div class="quote-row">
+              <span class="quote-label">Quote expires:</span>
+              <span class="quote-value">${quote.expiry ? new Date(quote.expiry).toLocaleTimeString() : '15 minutes'}</span>
+            </div>
+            <div class="quote-row">
+              <span class="quote-label">Deposit address:</span>
+              <span class="quote-value address">${quote.depositAddress}</span>
+            </div>
+            <div class="quote-expiry">
+              <small>⏰ Quote expires in ${Math.floor((quote.expiresAt - Date.now()) / 1000)} seconds</small>
+            </div>
+          </div>
+          <div class="quote-actions">
+            <button class="quote-cancel-btn">Cancel</button>
+            <button class="quote-confirm-btn">Confirm Donation</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Add event listeners
+      modal.querySelector('.close-quote-modal').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        resolve(false);
+      });
+
+      modal.querySelector('.quote-cancel-btn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        resolve(false);
+      });
+
+      modal.querySelector('.quote-confirm-btn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        resolve(true);
+      });
+
+      // Auto-close if quote expires
+      const timeLeft = quote.expiresAt - Date.now();
+      if (timeLeft > 0) {
+        setTimeout(() => {
+          if (document.body.contains(modal)) {
+            document.body.removeChild(modal);
+            resolve(false);
+          }
+        }, timeLeft);
+      }
+    });
+  }
+
+  async updateQuotePreview() {
+    const amount = document.getElementById('donation-amount').value;
+    const assetId = document.getElementById('asset-select').value;
+
+    if (!amount || !assetId || parseFloat(amount) <= 0) {
+      this.hideQuotePreview();
+      return;
+    }
+
+    try {
+      const coinSymbol = this.getCoinSymbol(assetId);
+      const networkName = this.getNetworkName(assetId);
+      
+      console.log(`Getting quote: ${parseFloat(amount)} ${coinSymbol} → USDC`);
+
+      if (!coinSymbol || coinSymbol === 'UNDEFINED') {
+        throw new Error(`Invalid asset ID: ${assetId}. Coin symbol could not be determined.`);
+      }
+      
+      const quote = await this.sideShiftClient.createQuote(
+        coinSymbol, 
+        networkName, 
+        'USDC', 
+        'ethereum', 
+        parseFloat(amount)
+      );
+      
+      console.log('Quote received:', quote);
+      this.showQuotePreview(quote);
+    } catch (error) {
+      console.error('Failed to get quote preview:', error);
+      this.showError(`Quote failed: ${error.message}`);
+      this.hideQuotePreview();
+    }
+  }
+
+  showQuotePreview(quote) {
+    let previewElement = document.getElementById('quote-preview');
+    
+    if (!previewElement) {
+      previewElement = document.createElement('div');
+      previewElement.id = 'quote-preview';
+      previewElement.className = 'quote-preview';
+      
+      // Insert after donation form
+      const donationForm = document.getElementById('donation-form');
+      donationForm.parentNode.insertBefore(previewElement, donationForm.nextSibling);
+    }
+
+    previewElement.innerHTML = `
+      <div class="quote-preview-content">
+        <h4>Quote Preview LIVE <span class="price-source live">LIVE</span></h4>
+        <div class="quote-preview-details">
+          <div class="quote-preview-row">
+            <span>You'll receive:</span>
+            <span class="highlight">${quote.settleAmount} ${quote.settleCoin}</span>
+          </div>
+          <div class="quote-preview-row">
+            <span>Rate:</span>
+            <span>1 ${quote.depositCoin} = ${quote.rate} ${quote.settleCoin}</span>
+          </div>
+          <div class="quote-preview-row">
+            <span>From:</span>
+            <span>${quote.depositNetwork}</span>
+          </div>
+          <div class="quote-preview-row">
+            <span>To:</span>
+            <span>${quote.settleNetwork}</span>
+          </div>
+          <div class="quote-preview-row live-indicator">
+            <span>LIVE: Live market price from SideShift</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  hideQuotePreview() {
+    const previewElement = document.getElementById('quote-preview');
+    if (previewElement) {
+      previewElement.remove();
+    }
+  }
+
+  getCoinSymbol(assetId) {
+    if (!assetId || typeof assetId !== 'string') {
+      console.error(`getCoinSymbol: Invalid assetId: ${assetId}`);
+      return 'UNDEFINED';
+    }
+    
+    // Extract coin symbol from asset ID (e.g., 'eth-mainnet' -> 'ETH')
+    const parts = assetId.split('-');
+    const symbol = parts[0] ? parts[0].toUpperCase() : 'UNDEFINED';
+    console.log(`getCoinSymbol: ${assetId} -> ${symbol}`);
+    return symbol;
+  }
+
+  getNetworkName(assetId) {
+    if (!assetId || typeof assetId !== 'string') {
+      console.error(`getNetworkName: Invalid assetId: ${assetId}`);
+      return 'ethereum';
+    }
+    
+    // Extract network name from asset ID (e.g., 'eth-mainnet' -> 'ethereum')
+    const parts = assetId.split('-');
+    const network = parts[1] || 'ethereum';
+    
+    // Map common network names
+    const networkMap = {
+      'mainnet': 'ethereum',
+      'polygon': 'polygon',
+      'bsc': 'bsc',
+      'avalanche': 'avalanche',
+      'arbitrum': 'arbitrum',
+      'optimism': 'optimism',
+      'base': 'base'
+    };
+    
+    const mappedNetwork = networkMap[network] || network;
+    console.log(`getNetworkName: ${assetId} -> ${network} -> ${mappedNetwork}`);
+    return mappedNetwork;
   }
 }

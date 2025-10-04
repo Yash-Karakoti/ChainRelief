@@ -1,13 +1,14 @@
 // Browser-based SideShift V2 API test
 // This will work in the browser environment
+import { config } from './config.js';
 
 export const testSideShiftInBrowser = async () => {
   console.log('🚨 ChainRelief - Browser SideShift V2 API Test');
   console.log('=============================================\n');
   
-  const apiKey = '58efadb407867cef740246ddc1d9a882';
-  const affiliateId = '7FD5vfMtV';
-  const baseURL = 'https://sideshift.ai/api/v2';
+  const apiKey = config.sideshift.apiKey;
+  const affiliateId = config.sideshift.affiliateId;
+  const baseURL = config.sideshift.baseURL;
   
   console.log('🔑 Your Credentials:');
   console.log(`API Key: ${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`);
@@ -61,9 +62,9 @@ export const testSideShiftInBrowser = async () => {
 export const testQuoteGeneration = async () => {
   console.log('\n🧪 Test 2: Generate Quote (ETH to USDC) - V2 API');
   
-  const apiKey = '58efadb407867cef740246ddc1d9a882';
-  const affiliateId = '7FD5vfMtV';
-  const baseURL = 'https://sideshift.ai/api/v2';
+  const apiKey = config.sideshift.apiKey;
+  const affiliateId = config.sideshift.affiliateId;
+  const baseURL = config.sideshift.baseURL;
   
   try {
     const quoteData = {
@@ -114,8 +115,8 @@ export const testQuoteGeneration = async () => {
 export const testPairs = async () => {
   console.log('\n🧪 Test 3: Get Trading Pairs - V2 API');
   
-  const apiKey = '58efadb407867cef740246ddc1d9a882';
-  const baseURL = 'https://sideshift.ai/api/v2';
+  const apiKey = config.sideshift.apiKey;
+  const baseURL = config.sideshift.baseURL;
   
   try {
     const response = await fetch(`${baseURL}/pairs`, {
@@ -173,7 +174,7 @@ export const runAllTests = async () => {
   
   if (test1.success && test2.success && test3.success) {
     console.log('\n🎉 All tests passed! Your SideShift V2 integration is working perfectly!');
-    console.log(`💰 Commission tracking enabled with affiliate ID: 7FD5vfMtV`);
+    console.log(`💰 Commission tracking enabled with affiliate ID: ${config.sideshift.affiliateId}`);
   } else {
     console.log('\n⚠️ Some tests failed. This might be due to:');
     console.log('- CORS policy restrictions');

@@ -4,37 +4,39 @@
 export const config = {
   // SideShift API Configuration
   sideshift: {
-    apiKey: '58efadb407867cef740246ddc1d9a882',
-    secret: '58efadb407867cef740246ddc1d9a882',
-    baseURL: 'https://sideshift.ai/api/v2',
-    affiliateId: '7FD5vfMtV',
-    enableRealAPI: true
+    apiKey: import.meta.env.VITE_SIDESHIFT_API_KEY || '',
+    secret: import.meta.env.VITE_SIDESHIFT_SECRET || '',
+    baseURL: import.meta.env.VITE_SIDESHIFT_BASE_URL || 'https://sideshift.ai/api/v2',
+    affiliateId: import.meta.env.VITE_AFFILIATE_ID || '',
+    enableRealAPI: import.meta.env.VITE_ENABLE_REAL_API === 'true' || false
   },
   
   // Application Configuration
   app: {
-    name: 'ChainRelief',
-    version: '1.0.0',
-    environment: 'production'
+    name: import.meta.env.VITE_APP_NAME || 'ChainRelief',
+    version: import.meta.env.VITE_APP_VERSION || '1.0.0',
+    environment: import.meta.env.VITE_APP_ENVIRONMENT || 'production'
   },
   
   // Network Configuration
   network: {
-    defaultChainId: 1,
-    supportedChains: [1, 137, 56, 43114] // Ethereum, Polygon, BSC, Avalanche
+    defaultChainId: parseInt(import.meta.env.VITE_DEFAULT_CHAIN_ID) || 1,
+    supportedChains: import.meta.env.VITE_SUPPORTED_CHAINS ? 
+      import.meta.env.VITE_SUPPORTED_CHAINS.split(',').map(Number) : 
+      [1, 137, 56, 43114] // Ethereum, Polygon, BSC, Avalanche
   },
   
   // Commission Settings
   commission: {
-    rate: 0.005, // 0.5%
-    affiliateId: '7FD5vfMtV'
+    rate: parseFloat(import.meta.env.VITE_COMMISSION_RATE) || 0.005, // 0.5%
+    affiliateId: import.meta.env.VITE_AFFILIATE_ID || ''
   },
   
   // Feature Flags
   features: {
-    enableRealAPI: true,
-    enableTestnet: false,
-    enableAnalytics: true
+    enableRealAPI: import.meta.env.VITE_ENABLE_REAL_API === 'true' || true,
+    enableTestnet: import.meta.env.VITE_ENABLE_TESTNET === 'true' || false,
+    enableAnalytics: import.meta.env.VITE_ENABLE_ANALYTICS === 'true' || true
   }
 };
 

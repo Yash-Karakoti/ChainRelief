@@ -16,12 +16,13 @@ export class DonationManager {
         assetId: donationData.assetId,
         amount: donationData.amount,
         recipientAddress: donationData.recipientAddress,
+        quote: donationData.quote || null,
         status: 'pending',
         createdAt: Date.now(),
         updatedAt: Date.now(),
         transactionHash: null,
         swapResult: null,
-        impact: this.calculateImpact(donationData.amount, donationData.assetId)
+        impact: this.calculateImpact(donationData.amount, donationData.assetId, donationData.quote)
       };
 
       // Store donation
@@ -58,32 +59,74 @@ export class DonationManager {
     return 'donation_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
 
-  calculateImpact(amount, assetId) {
+  calculateImpact(amount, assetId, quote = null) {
     // Calculate estimated impact based on donation amount
-    const usdValue = this.getUSDValue(assetId, amount);
+    let usdValue;
+    
+    if (quote && quote.settleCoin === 'USDC') {
+      // Use actual quote value if available
+      usdValue = parseFloat(quote.settleAmount);
+    } else {
+      // Fallback to estimated USD value
+      usdValue = this.getUSDValue(assetId, amount);
+    }
     
     return {
       usdValue: usdValue,
       livesImpacted: Math.floor(usdValue / 100), // $100 per life
       mealsProvided: Math.floor(usdValue / 5), // $5 per meal
       medicalSupplies: Math.floor(usdValue / 50), // $50 per medical kit
-      shelterDays: Math.floor(usdValue / 20) // $20 per shelter day
+      shelterDays: Math.floor(usdValue / 20), // $20 per shelter day
+      quote: quote
     };
   }
 
   getUSDValue(assetId, amount) {
     const usdRates = {
-      'ETH': 2000,
-      'BTC': 45000,
+      'ETH': 3200,
+      'BTC': 65000,
       'USDC': 1.0,
       'USDT': 1.0,
       'DAI': 1.0,
-      'MATIC': 0.8,
-      'BNB': 300,
-      'AVAX': 25
+      'MATIC': 0.85,
+      'BNB': 580,
+      'AVAX': 35
     };
 
-    return parseFloat(amount) * (usdRates[assetId] || 1.0);
+    // Try exact match first
+    if (usdRates[assetId]) {
+      return parseFloat(amount) * usdRates[assetId];
+    }
+
+    // Try case-insensitive match
+    const upperAssetId = assetId.toUpperCase();
+    if (usdRates[upperAssetId]) {
+      return parseFloat(amount) * usdRates[upperAssetId];
+    }
+
+    // Try to extract main asset name
+    const simplifiedAsset = this.simplifyAssetName(assetId);
+    if (usdRates[simplifiedAsset]) {
+      return parseFloat(amount) * usdRates[simplifiedAsset];
+    }
+
+    // Fallback to 1.0 for unknown assets
+    console.warn(`No USD rate found for ${assetId}, using $1.00`);
+    return parseFloat(amount) * 1.0;
+  }
+
+  simplifyAssetName(assetId) {
+    // Extract the main asset name from complex IDs
+    const upperId = assetId.toUpperCase();
+    if (upperId.includes('ETH')) return 'ETH';
+    if (upperId.includes('BTC')) return 'BTC';
+    if (upperId.includes('USDC')) return 'USDC';
+    if (upperId.includes('USDT')) return 'USDT';
+    if (upperId.includes('DAI')) return 'DAI';
+    if (upperId.includes('MATIC')) return 'MATIC';
+    if (upperId.includes('BNB')) return 'BNB';
+    if (upperId.includes('AVAX')) return 'AVAX';
+    return assetId;
   }
 
   updateDonationStatus(donationId, status, swapResult = null) {

@@ -21,8 +21,21 @@ export class DashboardManager {
     setInterval(() => {
       if (this.realTimeUpdates) {
         this.updateMetrics();
+        this.checkSystemHealth();
       }
     }, 30000);
+
+    // Update quote previews every 10 seconds
+    setInterval(() => {
+      if (this.realTimeUpdates) {
+        this.updateQuotePreviews();
+      }
+    }, 10000);
+
+    // Check for expired quotes every 5 seconds
+    setInterval(() => {
+      this.checkExpiredQuotes();
+    }, 5000);
   }
 
   initializeMetrics() {
@@ -298,5 +311,150 @@ export class DashboardManager {
       realTimeUpdates: this.realTimeUpdates,
       lastUpdated: new Date().toISOString()
     };
+  }
+
+  // Quote management methods
+  updateQuotePreviews() {
+    const previewElement = document.getElementById('quote-preview');
+    if (previewElement && previewElement.style.display !== 'none') {
+      // Trigger quote update in main app
+      const event = new CustomEvent('updateQuotePreview');
+      window.dispatchEvent(event);
+    }
+  }
+
+  checkExpiredQuotes() {
+    // Check if any quotes in the UI are expired
+    const quoteElements = document.querySelectorAll('.quote-preview, .quote-modal');
+    quoteElements.forEach(element => {
+      const expiryElement = element.querySelector('.quote-expiry');
+      if (expiryElement) {
+        const timeText = expiryElement.textContent;
+        const timeMatch = timeText.match(/(\d+)/);
+        if (timeMatch) {
+          const timeLeft = parseInt(timeMatch[1]);
+          if (timeLeft <= 0) {
+            this.showQuoteExpiredAlert();
+            element.remove();
+          }
+        }
+      }
+    });
+  }
+
+  showQuoteExpiredAlert() {
+    const alert = document.createElement('div');
+    alert.className = 'quote-expired-alert';
+    alert.innerHTML = `
+      <div class="alert-content">
+        <span class="alert-icon">⏰</span>
+        <span class="alert-message">Quote expired. Please get a new quote.</span>
+        <button class="alert-close" onclick="this.parentElement.parentElement.remove()">×</button>
+      </div>
+    `;
+
+    document.body.appendChild(alert);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (alert.parentNode) {
+        alert.parentNode.removeChild(alert);
+      }
+    }, 5000);
+  }
+
+  // Enhanced donation tracking
+  trackDonationProgress(donationId, status, data = {}) {
+    console.log(`Donation ${donationId} status: ${status}`, data);
+    
+    // Update UI based on status
+    switch (status) {
+      case 'quote_generated':
+        this.showStatusUpdate('Quote generated successfully', 'success');
+        break;
+      case 'quote_expired':
+        this.showStatusUpdate('Quote expired, please try again', 'warning');
+        break;
+      case 'swap_initiated':
+        this.showStatusUpdate('Swap initiated, processing...', 'info');
+        break;
+      case 'swap_completed':
+        this.showStatusUpdate('Swap completed successfully!', 'success');
+        this.addDonation(data);
+        break;
+      case 'swap_failed':
+        this.showStatusUpdate('Swap failed, please try again', 'error');
+        break;
+    }
+  }
+
+  showStatusUpdate(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `status-notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <span class="notification-icon">${this.getStatusIcon(type)}</span>
+        <span class="notification-message">${message}</span>
+      </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+  }
+
+  getStatusIcon(type) {
+    const icons = {
+      success: '✅',
+      warning: '⚠️',
+      error: '❌',
+      info: 'ℹ️'
+    };
+    return icons[type] || 'ℹ️';
+  }
+
+  // Real-time donation feed
+  addToDonationFeed(donation) {
+    const feedElement = document.getElementById('donation-feed');
+    if (!feedElement) return;
+
+    const feedItem = document.createElement('div');
+    feedItem.className = 'donation-feed-item';
+    feedItem.innerHTML = `
+      <div class="feed-avatar">🎉</div>
+      <div class="feed-content">
+        <div class="feed-message">
+          <strong>New donation received!</strong>
+          <span>$${donation.usdValue.toLocaleString()} ${donation.asset}</span>
+        </div>
+        <div class="feed-time">${new Date().toLocaleTimeString()}</div>
+        <div class="feed-impact">
+          ${donation.impact.livesImpacted} lives will be impacted
+        </div>
+      </div>
+    `;
+
+    // Add to top of feed
+    feedElement.insertBefore(feedItem, feedElement.firstChild);
+
+    // Remove old items (keep only last 10)
+    const items = feedElement.querySelectorAll('.donation-feed-item');
+    if (items.length > 10) {
+      items[items.length - 1].remove();
+    }
+
+    // Add animation
+    feedItem.style.opacity = '0';
+    feedItem.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+      feedItem.style.transition = 'all 0.3s ease';
+      feedItem.style.opacity = '1';
+      feedItem.style.transform = 'translateY(0)';
+    }, 100);
   }
 }

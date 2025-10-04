@@ -137,7 +137,7 @@ Headers: {
 }
 ```
 
-## 🛠 **Troubleshooting**
+## **Troubleshooting**
 
 ### **Common Issues & Solutions**
 
@@ -177,7 +177,7 @@ Error: "Failed to fetch"
 - Verify API endpoint is accessible
 - Test with curl/Postman first
 
-## 📊 **Monitoring & Analytics**
+## **Monitoring & Analytics**
 
 ### **API Usage Tracking**
 
@@ -194,29 +194,13 @@ With affiliate ID configured:
 - Revenue tracking
 - Performance metrics
 
-## 🔄 **Fallback Strategy**
+## **Fallback Strategy**
 
 The application includes intelligent fallbacks:
 
 1. **Real API First**: Try SideShift API with your credentials
 2. **Mock Data Fallback**: Use mock data if API fails
 3. **Error Handling**: Graceful degradation for better UX
-
-## 🎯 **Buildathon Optimization**
-
-### **For Demo/Submission**
-
-1. **Use Real API**: Enable `VITE_ENABLE_REAL_API=true`
-2. **Test Thoroughly**: Verify all endpoints work
-3. **Show Real Data**: Demonstrate actual SideShift integration
-4. **Handle Errors**: Show robust error handling
-
-### **For Production**
-
-1. **Environment Variables**: Use proper production keys
-2. **Security**: Implement proper key management
-3. **Monitoring**: Add comprehensive logging
-4. **Scaling**: Implement rate limiting and caching
 
 ## 📞 **Support Resources**
 

@@ -2,7 +2,7 @@
 
 > **Built for SideShift.ai Buildathon** | A revolutionary platform that enables instant, multi-asset donations with automatic conversion to stablecoins for immediate relief efforts.
 
-## 🎯 Project Overview
+## Project Overview
 
 ChainRelief is a cross-chain disaster funding platform that solves critical problems in humanitarian aid:
 
@@ -11,26 +11,26 @@ ChainRelief is a cross-chain disaster funding platform that solves critical prob
 - **Manual Processes**: Current solutions lack automated conversion and distribution
 - **Transparency Issues**: Limited visibility into fund flows and impact
 
-## ✨ Key Features
+## Key Features
 
-### 🌐 Multi-Chain Support
+### Multi-Chain Support
 - **200+ Assets** across **40+ Chains** via SideShift API
 - Support for ETH, BTC, USDC, USDT, DAI, MATIC, BNB, AVAX, and more
 - Automatic cross-chain routing and gas optimization
 
-### ⚡ Instant Conversion
+### Instant Conversion
 - Real-time swap execution using SideShift API
 - Automatic conversion to stablecoins (USDC/USDT/DAI)
 - Slippage protection and MEV resistance
 - Failed swap recovery mechanisms
 
-### 🔒 Smart Contract Infrastructure
+### Smart Contract Infrastructure
 - Multi-signature treasury management
 - Automated stablecoin distribution
 - Transparent fund tracking on-chain
 - Emergency pause mechanisms
 
-### 📊 Real-Time Dashboard
+### Real-Time Dashboard
 - Live donation tracking
 - Impact metrics and analytics
 - Campaign progress monitoring
@@ -74,8 +74,8 @@ ChainRelief is a cross-chain disaster funding platform that solves critical prob
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/chainrelief.git
-cd chainrelief
+git clone https://github.com/yash-karakoti/chainrelief.git
+cd Onchain-Relief
 
 # Install dependencies
 npm install
@@ -106,22 +106,6 @@ npm run dev
 - **Native Tokens**: ETH, BTC, MATIC, BNB, AVAX
 - **Stablecoins**: USDC, USDT, DAI
 - **Other Assets**: 200+ cryptocurrencies via SideShift
-
-## 🏆 Buildathon Alignment
-
-### Development Tracks
-- ✅ **Cross-Chain Power in DeFi**: Smart contract integration
-- ✅ **Zero UI**: Seamless wallet integration
-- ✅ **AI + Automation**: Intelligent routing algorithms
-- ✅ **Social Impact**: Real humanitarian use case
-
-### Judging Criteria (30 points)
-- **API Integration (20%)**: Sophisticated multi-chain architecture
-- **Originality (20%)**: First cross-chain disaster relief platform
-- **Value Creation (15%)**: Solves real humanitarian challenges
-- **Crypto-Native (15%)**: Web3 transparency and security
-- **Product Design (15%)**: Intuitive, mobile-first interface
-- **Presentation (15%)**: Live demo with real impact metrics
 
 ## 🛠 Technical Implementation
 
@@ -167,26 +151,6 @@ dashboardManager.updateMetrics(result);
 - **Shelter Days**: $20 per day
 - **Emergency Response**: < 2 minute processing
 
-## 🔮 Future Roadmap
-
-### Phase 1: MVP (Current)
-- ✅ Core donation flow
-- ✅ Multi-chain support
-- ✅ Real-time tracking
-- ✅ Basic dashboard
-
-### Phase 2: Advanced Features
-- 🔄 AI-powered routing
-- 🔄 Emergency mode
-- 🔄 Batch processing
-- 🔄 Mobile app
-
-### Phase 3: Production
-- 🔄 Relief organization dashboard
-- 🔄 DAO governance
-- 🔄 Insurance integration
-- 🔄 Global deployment
-
 ## 🤝 Contributing
 
 We welcome contributions to make ChainRelief even better:
@@ -196,25 +160,6 @@ We welcome contributions to make ChainRelief even better:
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **SideShift.ai** for providing the cross-chain swap API
-- **Ethereum Foundation** for blockchain infrastructure
-- **Humanitarian Organizations** for inspiration and use cases
-- **Open Source Community** for tools and libraries
-
-## 📞 Contact
-
-- **Project**: ChainRelief
-- **Buildathon**: SideShift.ai 2024
-- **Email**: your-email@example.com
-- **Twitter**: @chainrelief
-- **Website**: https://chainrelief.vercel.app
 
 ---
 

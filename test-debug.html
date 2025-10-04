@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug SideShift API</title>
+</head>
+<body>
+    <h1>SideShift API Debug Test</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            console.log(message);
+            output.innerHTML += '<div>' + message + '</div>';
+        }
+        
+        async function testSideShiftAPI() {
+            try {
+                log('Testing SideShift API...');
+                
+                // Test 1: Check if we can fetch coins
+                log('1. Testing /coins endpoint...');
+                const coinsResponse = await fetch('https://sideshift.ai/api/v2/coins', {
+                    method: 'GET',
+                    headers: {
+                        'x-sideshift-secret': '58efadb407867cef740246ddc1d9a882',
+                        'x-user-ip': '1.1.1.1'
+                    }
+                });
+                
+                log(`Coins response status: ${coinsResponse.status}`);
+                
+                if (coinsResponse.ok) {
+                    const coins = await coinsResponse.json();
+                    log(`✅ Coins fetched: ${coins.length} coins`);
+                    log(`Sample coins: ${coins.slice(0, 3).map(c => c.id).join(', ')}`);
+                } else {
+                    const errorText = await coinsResponse.text();
+                    log(`❌ Coins failed: ${errorText}`);
+                }
+                
+                // Test 2: Check if we can create a quote
+                log('2. Testing /quotes endpoint...');
+                const quoteResponse = await fetch('https://sideshift.ai/api/v2/quotes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sideshift-secret': '58efadb407867cef740246ddc1d9a882',
+                        'x-user-ip': '1.1.1.1'
+                    },
+                    body: JSON.stringify({
+                        depositCoin: 'ETH',
+                        depositNetwork: 'ethereum',
+                        settleCoin: 'USDC',
+                        settleNetwork: 'ethereum',
+                        depositAmount: '0.1',
+                        affiliateId: '7FD5vfMtV'
+                    })
+                });
+                
+                log(`Quote response status: ${quoteResponse.status}`);
+                
+                if (quoteResponse.ok) {
+                    const quote = await quoteResponse.json();
+                    log(`✅ Quote created: ${quote.depositAmount} ${quote.depositCoin} → ${quote.settleAmount} ${quote.settleCoin}`);
+                } else {
+                    const errorText = await quoteResponse.text();
+                    log(`❌ Quote failed: ${errorText}`);
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        testSideShiftAPI();
+    </script>
+</body>
+</html>
