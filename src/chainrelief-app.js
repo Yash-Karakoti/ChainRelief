@@ -2,6 +2,7 @@ import { WalletManager } from './wallet-manager.js';
 import { sideShiftClient } from './sideshift-client.js';
 import { DonationManager } from './donation-manager.js';
 import { DashboardManager } from './dashboard-manager.js';
+import { ProfileManager } from './profile-manager.js';
 import { testSideShiftInBrowser, testQuoteGeneration } from './test-sideshift-browser.js';
 
 export class ChainReliefApp {
@@ -10,6 +11,7 @@ export class ChainReliefApp {
     this.sideShiftClient = sideShiftClient;
     this.donationManager = new DonationManager();
     this.dashboardManager = new DashboardManager();
+    this.profileManager = new ProfileManager(this.walletManager, this.sideShiftClient);
     
     this.isConnected = false;
     this.currentCampaign = null;
@@ -47,10 +49,17 @@ export class ChainReliefApp {
           </div>
         </header>
 
+        <!-- Navigation Tabs -->
+        <nav class="main-nav">
+          <button class="nav-tab active" data-section="home">🏠 Home</button>
+          <button class="nav-tab" data-section="campaigns">🎯 Campaigns</button>
+          <button class="nav-tab" id="profile-tab" data-section="profile">👤 Profile</button>
+        </nav>
+
         <!-- Main Content -->
         <main class="main-content">
           <!-- Active Campaigns Section -->
-          <section class="campaigns-section">
+          <section class="campaigns-section" id="home-section">
             <h2>Active Relief Campaigns</h2>
             <div id="campaigns-grid" class="campaigns-grid">
               <!-- Campaigns will be loaded here -->
@@ -152,6 +161,7 @@ export class ChainReliefApp {
               </div>
             </div>
           </section>
+          ${this.profileManager.getProfileHTML()}
         </main>
 
         <!-- Footer -->
@@ -166,6 +176,9 @@ export class ChainReliefApp {
     try {
       // Load supported assets from SideShift
       await this.loadSupportedAssets();
+      
+      // Initialize profile manager
+      await this.profileManager.initialize();
       
       // Show API status
       this.showAPISstatus();
@@ -223,6 +236,14 @@ export class ChainReliefApp {
   }
 
   setupEventListeners() {
+    // Navigation tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const section = e.target.dataset.section;
+        this.navigateToSection(section);
+      });
+    });
+
     // Test API button
     document.getElementById('test-api').addEventListener('click', () => {
       this.testSideShiftAPI();
@@ -928,5 +949,41 @@ export class ChainReliefApp {
     const mappedNetwork = networkMap[network] || network;
     console.log(`getNetworkName: ${assetId} -> ${network} -> ${mappedNetwork}`);
     return mappedNetwork;
+  }
+
+  /**
+   * Navigate to different sections
+   */
+  navigateToSection(section) {
+    // Update active tab
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    document.querySelector(`[data-section="${section}"]`).classList.add('active');
+
+    // Hide all sections
+    document.querySelectorAll('.campaigns-section, .donation-section, .tracking-section, .impact-section, #profile-section').forEach(el => {
+      el.classList.add('hidden');
+    });
+
+    // Show selected section
+    if (section === 'home') {
+      document.querySelector('.campaigns-section').classList.remove('hidden');
+      document.querySelector('.donation-section').classList.remove('hidden');
+      document.querySelector('.tracking-section').classList.remove('hidden');
+      document.querySelector('.impact-section').classList.remove('hidden');
+    } else if (section === 'campaigns') {
+      document.querySelector('.campaigns-section').classList.remove('hidden');
+      document.querySelector('.donation-section').classList.remove('hidden');
+    } else if (section === 'profile') {
+      this.profileManager.showProfile();
+    }
+  }
+
+  /**
+   * Track donation in profile
+   */
+  trackDonation(donationData) {
+    this.profileManager.addDonation(donationData);
   }
 }

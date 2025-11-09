@@ -9,13 +9,21 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:api": "node test-api.js",
-    "test:sideshift": "node test-sideshift.js"
+    "test:sideshift": "node test-sideshift.js",
+    "compile": "hardhat compile --config hardhat.config.cjs",
+    "deploy:local": "hardhat run scripts/deploy.cjs --config hardhat.config.cjs --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.cjs --config hardhat.config.cjs --network sepolia",
+    "node": "hardhat node --config hardhat.config.cjs"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.3",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "ethers": "^6.15.0",
+    "hardhat": "^3.0.12",
     "vite": "^7.1.7"
   },
   "dependencies": {
-    "dotenv": "^17.2.3",
-    "ethers": "^6.8.1"
+    "dotenv": "^17.2.3"
   }
 }
